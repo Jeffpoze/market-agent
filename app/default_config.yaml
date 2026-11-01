@@ -4,7 +4,8 @@ timezone: America/Toronto
 
 # Paper money only. Nothing here places real trades.
 paper:
-  starting_cash: 1000        # CAD of pretend money, split evenly across watchlist x strategies
+  starting_cash: 50          # CAD of pretend money, split evenly across watchlist x strategies.
+                             # Changing it starts the paper portfolio over.
   fee_pct: 0.5               # assumed cost per trade (spread + fee), in %. Crypto apps are often 0.5–1.5%
 
 # Yahoo Finance symbols. ".TO" = Toronto Stock Exchange. Crypto in CAD.

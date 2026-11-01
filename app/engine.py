@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 from . import data, db, notify
-from .backtest import periods_for, run as run_backtest
+from .backtest import doubling_odds, periods_for, run as run_backtest
 from .strategies import STRATEGIES
 
 log = logging.getLogger("engine")
@@ -37,6 +37,8 @@ def backtest_all(cfg, fetch=data.history):
             res = run_backtest(close, strat, fee, periods_for(sym))
             db.execute("INSERT OR REPLACE INTO backtests VALUES (?,?,?,?)",
                        (sym, strat, json.dumps(res), now()))
+        db.execute("INSERT OR REPLACE INTO odds VALUES (?,?,?)",
+                   (sym, json.dumps(doubling_odds(close)), now()))
     event("backtest", "Backtests refreshed")
 
 
@@ -44,6 +46,7 @@ def daily_run(cfg, fetch=data.history):
     """Compute today's signal per symbol/strategy and update the paper portfolio."""
     syms, strats = symbols(cfg), list(cfg.get("strategies", []))
     paper = cfg.get("paper", {})
+    reset_if_budget_changed(paper.get("starting_cash", 1000))
     fee = paper.get("fee_pct", 0.5) / 100
     slice_cash = paper.get("starting_cash", 1000) / max(len(syms) * len(strats), 1)
     changes = []
@@ -86,6 +89,16 @@ def daily_run(cfg, fetch=data.history):
         notify.home_assistant(cfg, "Market Agent", msg)
     else:
         event("daily", "Daily run done, no signal changes")
+
+
+def reset_if_budget_changed(budget):
+    """Start the paper portfolio over when the starting cash in the config changes."""
+    row = db.query("SELECT value FROM meta WHERE key='starting_cash'")
+    if row and float(row[0]["value"]) != float(budget):
+        db.execute("DELETE FROM paper_positions")
+        db.execute("DELETE FROM paper_trades")
+        event("paper", f"Paper portfolio reset: budget changed from ${float(row[0]['value']):,.2f} to ${float(budget):,.2f}")
+    db.execute("INSERT OR REPLACE INTO meta VALUES ('starting_cash', ?)", (str(budget),))
 
 
 def _trade(sym, strat, side, price, units, value):

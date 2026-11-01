@@ -47,3 +47,34 @@ def run(close: pd.Series, strategy: str, fee_pct: float = 0.5, periods_per_year:
 def periods_for(symbol: str) -> int:
     """Crypto trades every day; stocks ~252 days a year."""
     return 365 if "-" in symbol and symbol.split("-")[-1] in {"CAD", "USD", "USDT"} else 252
+
+
+def doubling_odds(close: pd.Series) -> dict:
+    """From every past day: how often did the price double (or halve) within 6 / 12 months?
+
+    Uses calendar days so stocks and crypto are comparable. Only start days with a
+    full window of future data are counted.
+    """
+    s = close.dropna()
+    out = {"start": s.index[0].date().isoformat(), "years": round((s.index[-1] - s.index[0]).days / 365.25, 1)}
+    vals, idx = s.values, s.index
+    for label, days in (("6m", 182), ("12m", 365)):
+        ends = idx.searchsorted(idx + pd.Timedelta(days=days), side="right")
+        valid = ends < len(s)
+        n = int(valid.sum())
+        if n < 30:
+            out.update({f"double_{label}": None, f"halve_{label}": None})
+            continue
+        dbl = hlf = 0
+        rets = []
+        for i in np.nonzero(valid)[0]:
+            window = vals[i + 1:ends[i]]
+            if window.size == 0:
+                continue
+            dbl += window.max() >= 2 * vals[i]
+            hlf += window.min() <= 0.5 * vals[i]
+            rets.append(vals[ends[i] - 1] / vals[i] - 1)
+        out[f"double_{label}"] = round(100 * dbl / n, 1)
+        out[f"halve_{label}"] = round(100 * hlf / n, 1)
+        out[f"median_{label}"] = round(100 * float(np.median(rets)), 1) if rets else None
+    return out

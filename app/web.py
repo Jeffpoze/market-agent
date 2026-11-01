@@ -106,7 +106,30 @@ def overview(cfg):
         ) + "</table></div>"
     elif cb_err:
         cb = f"<div class='card'><h2>Coinbase</h2><p class='note'>{esc(cb_err)}</p></div>"
-    return page("Market Agent", "/", kpis + sig_card + trade_card + cb)
+    return page("Market Agent", "/", kpis + odds_card() + sig_card + trade_card + cb)
+
+
+def odds_card():
+    rows = db.query("SELECT * FROM odds ORDER BY symbol")
+    if not rows:
+        return ""
+    trs = ""
+    for r in rows:
+        o = json.loads(r["result"])
+        def cell(v, good):
+            if v is None:
+                return "<td class='n muted'>—</td>"
+            cls = ("up" if v >= 20 else "") if good else ("down" if v >= 10 else "")
+            return f"<td class='n {cls}'>{v:.0f}%</td>"
+        trs += (f"<tr><td>{esc(r['symbol'])}</td>{cell(o.get('double_6m'), True)}"
+                f"{cell(o.get('double_12m'), True)}{cell(o.get('halve_12m'), False)}"
+                f"<td class='n'>{pct(o.get('median_12m'))}</td></tr>")
+    return (f"<div class='card'><h2>Could it double?</h2>"
+            f"<p class='note'>From every day in the last ~10 years: how often the price doubled at some point "
+            f"in the next 6 or 12 months, how often it got cut in half, and the typical 1-year result. "
+            f"History, not a promise.</p><div class='scroll'><table><tr><th>Symbol</th>"
+            f"<th class='n'>Doubled 6m</th><th class='n'>Doubled 12m</th><th class='n'>Halved 12m</th>"
+            f"<th class='n'>Typical 1y</th></tr>{trs}</table></div></div>")
 
 
 def backtests_page():

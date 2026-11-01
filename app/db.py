@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS radar_bets (
   symbol TEXT, name TEXT, url TEXT, opened TEXT, entry_price REAL,
   stake REAL, last_price REAL, status TEXT DEFAULT 'open', closed TEXT,
   exit_reason TEXT, pnl REAL, UNIQUE(rule, chain, token));
+CREATE TABLE IF NOT EXISTS odds (
+  symbol TEXT PRIMARY KEY, result TEXT, ran TEXT);
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, kind TEXT, message TEXT);
 """
