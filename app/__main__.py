@@ -39,7 +39,7 @@ def scheduler(cfg):
     radar_on = cfg.get("radar", {}).get("enabled", True)
 
     # First start: fill everything so the dashboard isn't empty.
-    if not db.query("SELECT 1 FROM backtests LIMIT 1"):
+    if not db.query("SELECT 1 FROM backtests LIMIT 1") or not db.query("SELECT 1 FROM odds LIMIT 1"):
         safe(engine.backtest_all, cfg)
     safe(engine.daily_run, cfg)
     last_radar = 0.0
