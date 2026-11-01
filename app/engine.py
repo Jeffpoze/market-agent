@@ -94,10 +94,16 @@ def daily_run(cfg, fetch=data.history):
 def reset_if_budget_changed(budget):
     """Start the paper portfolio over when the starting cash in the config changes."""
     row = db.query("SELECT value FROM meta WHERE key='starting_cash'")
-    if row and float(row[0]["value"]) != float(budget):
+    if row:
+        old = float(row[0]["value"])
+    else:  # older installs: infer the budget the existing positions were funded with
+        n = db.query("SELECT COUNT(*) c FROM paper_positions")[0]["c"]
+        first = db.query("SELECT value FROM paper_trades WHERE side='BUY' ORDER BY id LIMIT 1")
+        old = round(first[0]["value"] * n) if n and first else float(budget)
+    if abs(old - float(budget)) > 0.01:
         db.execute("DELETE FROM paper_positions")
         db.execute("DELETE FROM paper_trades")
-        event("paper", f"Paper portfolio reset: budget changed from ${float(row[0]['value']):,.2f} to ${float(budget):,.2f}")
+        event("paper", f"Paper portfolio reset: budget changed from ${old:,.2f} to ${float(budget):,.2f}")
     db.execute("INSERT OR REPLACE INTO meta VALUES ('starting_cash', ?)", (str(budget),))
 
 
