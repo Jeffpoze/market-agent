@@ -17,8 +17,8 @@ API = "https://api.dexscreener.com"
 
 # rule name -> (description, filter on the best trading pair)
 RULES = {
-    "any_new": ("Every newly promoted token, no filter",
-                lambda p: True),
+    "any_new": ("Every newly promoted token that can actually be traded (liquidity ≥ $1k)",
+                lambda p: _liq(p) >= 1_000),
     "liq_50k": ("Liquidity at least $50k",
                 lambda p: _liq(p) >= 50_000),
     "liq_50k_vol_250k": ("Liquidity ≥ $50k and 24h volume ≥ $250k",
