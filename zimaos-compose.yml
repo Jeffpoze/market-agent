@@ -1,0 +1,49 @@
+# Market Agent — paste into ZimaOS: + → Install Custom App → YAML (or Import → Docker compose).
+# Paper trading only. Dashboard: http://<zima-ip>:8088
+# On every start it downloads the latest code from github.com/Jeffpoze/market-agent.
+# Settings live in /DATA/AppData/market-agent/config.yaml after first start.
+name: market-agent
+services:
+  market-agent:
+    image: python:3.12-slim
+    container_name: market-agent
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    volumes:
+      - /DATA/AppData/market-agent:/data
+    environment:
+      TZ: America/Toronto
+      PYTHONUNBUFFERED: "1"
+      PORT: "8080"
+      MARKET_AGENT_DB: /data/market_agent.db
+      MARKET_AGENT_CONFIG: /data/config.yaml
+      COINBASE_API_KEY: ""      # optional, VIEW-ONLY key
+      COINBASE_API_SECRET: ""
+    working_dir: /srv
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        python -c "import io,tarfile,urllib.request; tarfile.open(fileobj=io.BytesIO(urllib.request.urlopen('https://codeload.github.com/Jeffpoze/market-agent/tar.gz/refs/heads/main').read())).extractall('/srv')"
+        cp -r /srv/market-agent-main/app /srv/app
+        if [ ! -f /data/pylib/.installed ]; then
+          echo 'Installing Python packages (first start only)...'
+          pip install --no-cache-dir -q --target /data/pylib -r /srv/market-agent-main/requirements.txt
+          touch /data/pylib/.installed
+        fi
+        PYTHONPATH=/data/pylib exec python -m app
+x-casaos:
+  architectures: [amd64, arm64]
+  main: market-agent
+  title:
+    en_us: Market Agent
+    custom: Market Agent
+  description:
+    en_us: Paper-trading signals, backtests and a memecoin radar
+  category: Finance
+  port_map: "8088"
+  scheme: http
+  index: /
+  icon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/ghostfolio.png

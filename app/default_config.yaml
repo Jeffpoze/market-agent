@@ -1,0 +1,49 @@
+# Market Agent config — lives in /data/config.yaml. Edit it, then restart the container to apply.
+
+timezone: America/Toronto
+
+# Paper money only. Nothing here places real trades.
+paper:
+  starting_cash: 1000        # CAD of pretend money, split evenly across watchlist x strategies
+  fee_pct: 0.5               # assumed cost per trade (spread + fee), in %. Crypto apps are often 0.5–1.5%
+
+# Yahoo Finance symbols. ".TO" = Toronto Stock Exchange. Crypto in CAD.
+watchlist:
+  etfs:
+    - XEQT.TO     # all-in-one global equity ETF
+    - VFV.TO      # S&P 500 in CAD
+    - XIU.TO      # TSX 60
+    - QQQ         # Nasdaq 100 (USD)
+  crypto:
+    - BTC-CAD
+    - ETH-CAD
+    - XRP-CAD
+    - SOL-CAD
+
+# Rule-based strategies the engine backtests and paper-trades.
+strategies:
+  - trend_200       # hold when price is above its 200-day average, cash otherwise
+  - golden_cross    # hold when the 50-day average is above the 200-day average
+  - rsi_dip         # buy oversold dips (RSI<30) only in an uptrend, sell when RSI>70
+
+backtest:
+  years: 10
+
+# Memecoin radar — fake $5 bets on newly listed tokens (DexScreener data).
+radar:
+  enabled: true
+  every_minutes: 60
+  bet_usd: 5
+  hold_days: 7               # close the bet after this long
+  take_profit_pct: 100       # close early at +100%
+  stop_loss_pct: -50         # close early at -50%
+  max_new_bets_per_run: 10   # per rule
+
+# Optional: Home Assistant webhook for alerts when a signal changes.
+# Create an automation with a Webhook trigger and paste its ID here.
+home_assistant:
+  webhook_url: ""            # e.g. http://homeassistant.local:8123/api/webhook/market_agent
+
+# Optional: Coinbase read-only balances. Put keys in the .env file, not here.
+coinbase:
+  enabled: true
