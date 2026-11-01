@@ -27,7 +27,7 @@ services:
       - |
         set -e
         python -c "import io,tarfile,urllib.request; tarfile.open(fileobj=io.BytesIO(urllib.request.urlopen('https://codeload.github.com/Jeffpoze/market-agent/tar.gz/refs/heads/main').read())).extractall('/srv')"
-        cp -r /srv/market-agent-main/app /srv/app
+        rm -rf /srv/app && cp -r /srv/market-agent-main/app /srv/app
         if [ ! -f /data/pylib/.installed ]; then
           echo 'Installing Python packages (first start only)...'
           pip install --no-cache-dir -q --target /data/pylib -r /srv/market-agent-main/requirements.txt
